@@ -18,6 +18,7 @@ import logging
 from collections import defaultdict
 from urlparse import urlparse
 from lxml import html
+from cleverbot import Cleverbot
 
 # for media upload
 import mimetypes
@@ -29,8 +30,8 @@ def catchKeyboardInterrupt(fn):
         try:
             return fn(*args)
         except KeyboardInterrupt:
-            print '\n[*] 强制退出程序'
-            logging.debug('[*] 强制退出程序')
+            print '\n[*] Force quit'
+            logging.debug('[*] Force quit')
     return wrapper
 
 
@@ -119,6 +120,7 @@ class WebWeixin(object):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie))
         opener.addheaders = [('User-agent', self.user_agent)]
         urllib2.install_opener(opener)
+        self.prophet = Cleverbot()
 
     def loadConfig(self, config):
         if config['DEBUG']:
@@ -183,9 +185,9 @@ class WebWeixin(object):
             self.base_uri = r_uri[:r_uri.rfind('/')]
             return True
         elif code == '408':
-            self._echo('[登陆超时] \n')
+            self._echo('[Login Timeout] \n')
         else:
-            self._echo('[登陆异常] \n')
+            self._echo('[Login Timeout] \n')
         return False
 
     def login(self):
@@ -560,11 +562,11 @@ class WebWeixin(object):
         return self._saveFile(fn, data, 'webwxgetvoice')
 
     def getGroupName(self, id):
-        name = '未知群'
+        name = 'UnknownGroup'
         for member in self.GroupList:
             if member['UserName'] == id:
                 name = member['NickName']
-        if name == '未知群':
+        if name == 'UnknownGroup':
             # 现有群里面查不到
             GroupList = self.getNameById(id)
             for group in GroupList:
@@ -594,7 +596,7 @@ class WebWeixin(object):
         return id
 
     def getUserRemarkName(self, id):
-        name = '未知群' if id[:2] == '@@' else '陌生人'
+        name = 'UnknownGroup' if id[:2] == '@@' else 'Stranger'
         if id == self.User['UserName']:
             return self.User['NickName']  # 自己
 
@@ -625,7 +627,7 @@ class WebWeixin(object):
                     name = member['DisplayName'] if member[
                         'DisplayName'] else member['NickName']
 
-        if name == '未知群' or name == '陌生人':
+        if name == 'UnknownGroup' or name == 'Stranger':
             logging.debug(id)
         return name
 
@@ -730,11 +732,11 @@ class WebWeixin(object):
                     if not isgroupchat or (isgroupchat and ismentioned):
                         ans = self._prophet(content)
                         if self.webwxsendmsg(ans, msg['FromUserName']):
-                            print '自动回复: ' + ans
-                            logging.info('自动回复: ' + ans)
+                            print 'Autoreply: ' + ans
+                            logging.info('Autoreply: ' + ans)
                         else:
-                            print '自动回复失败'
-                            logging.info('自动回复失败')
+                            print 'Autoreply Failed'
+                            logging.info('Autoreply Failed')
             elif msgType == 3:
                 image = self.webwxgetmsgimg(msgid)
                 raw_msg = {'raw_msg': msg,
@@ -785,7 +787,7 @@ class WebWeixin(object):
                     name, appMsgType[msg['AppMsgType']], json.dumps(card))}
                 self._showMsg(raw_msg)
             elif msgType == 51:
-                raw_msg = {'raw_msg': msg, 'message': '[*] 成功获取联系人信息'}
+                raw_msg = {'raw_msg': msg, 'message': '[*] Successfully got contacts'}
                 self._showMsg(raw_msg)
             elif msgType == 62:
                 video = self.webwxgetvideo(msgid)
@@ -842,10 +844,8 @@ class WebWeixin(object):
                         self.handleMsg(r)
                 elif selector == '6':
                     r = self.webwxsync()
-                    # TODO
-                    #redEnvelope += 1
-                    #print '[*] 收到疑似红包消息 %d 次' % redEnvelope
-                    #logging.debug('[*] 收到疑似红包消息 %d 次' % redEnvelope)
+                    if r is not None:
+                        self.handleMsg(r)
                 elif selector == '7':
                     #playWeChat += 1
                     #print '[*] 你在手机上玩微信被我发现了 %d 次' % playWeChat
@@ -1065,6 +1065,7 @@ class WebWeixin(object):
         """
         AI autoreply.
         """
+        """
         url = 'http://192.168.0.10:5000/chatbot/'
         headers = {'Content-Type': 'application/json'}
         payload = {'text': str(word)}
@@ -1078,6 +1079,8 @@ class WebWeixin(object):
                 return replies[random.randint(0,4)]
         except:
             return "Sorry, I can't understand."
+        """
+        return self.prophet.ask(word)
 
     def _simsimi(self, word):
         key = ''
