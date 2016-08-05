@@ -730,6 +730,16 @@ class WebWeixin(object):
                 if self.autoReplyMode:
                     print 'isgroupchat, ismentioned:', isgroupchat, ismentioned
                     if not isgroupchat or (isgroupchat and ismentioned):
+                        #print 'Msg content before strip:', content
+                        if isgroupchat:
+                            sig = '<br/>'
+                            pos = content.find(sig)
+                            content = str(content[pos + len(sig):])
+                            pattern = str('@' + self.User['NickName'])
+                            loc = content.find(pattern)
+                            # UTF-8 encoding of Chinese whitespace takes 3 positions
+                            content = content[:loc] + content[loc + len(pattern) + 3:]
+                        #print 'Msg content after strip:', content
                         ans = self._prophet(content)
                         if self.webwxsendmsg(ans, msg['FromUserName']):
                             print 'Autoreply: ' + ans
@@ -809,7 +819,9 @@ class WebWeixin(object):
         id, msgType, nickname = msg['FromUserName'], msg['MsgType'], self.User['NickName']
         isgroupchat = True if id[:2] == '@@' else False
         content = msg['Content'].replace('&lt;', '<').replace('&gt;', '>')
-        stripped_body = str(content[71:])
+        sig = '<br/>'
+        loc = content.find(sig)
+        stripped_body = str(content[loc + len(sig):]) if loc != -1 else ''
         pattern = str('@' + nickname)
         res = stripped_body.find(pattern)
         ismentioned = True if stripped_body and (res != -1) else False
