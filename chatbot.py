@@ -817,9 +817,9 @@ class WebWeixin(object):
         return mention_in_group
 
     def listenMsgMode(self):
-        print '[*] 进入消息监听模式 ... 成功'
-        logging.debug('[*] 进入消息监听模式 ... 成功')
-        self._run('[*] 进行同步线路测试 ... ', self.testsynccheck)
+        print '[*] Start listening for msg ... done'
+        logging.debug('[*] Start listening for msg ... done')
+        self._run('[*] Testing sync link ... ', self.testsynccheck)
         playWeChat = 0
         redEnvelope = 0
         while True:
@@ -828,28 +828,19 @@ class WebWeixin(object):
             if self.DEBUG:
                 print 'retcode: %s, selector: %s' % (retcode, selector)
             logging.debug('retcode: %s, selector: %s' % (retcode, selector))
-            if retcode == '1100':
-                print '[*] 你在手机上登出了微信，债见'
-                logging.debug('[*] 你在手机上登出了微信，债见')
-                break
-            if retcode == '1101':
-                print '[*] 你在其他地方登录了 WEB 版微信，债见'
-                logging.debug('[*] 你在其他地方登录了 WEB 版微信，债见')
+            if retcode == '1100' or retcode == '1101':
+                print '[*] Webpage logged out, bye'
+                logging.debug('[*] Webpage logged out, bye')
                 break
             elif retcode == '0':
-                if selector == '2':
+                if selector == '2' or selector == '6':
                     # sync status normal, received new msg
                     r = self.webwxsync()
                     if r is not None:
                         self.handleMsg(r)
-                elif selector == '6':
-                    r = self.webwxsync()
-                    if r is not None:
-                        self.handleMsg(r)
                 elif selector == '7':
-                    #playWeChat += 1
-                    #print '[*] 你在手机上玩微信被我发现了 %d 次' % playWeChat
-                    #logging.debug('[*] 你在手机上玩微信被我发现了 %d 次' % playWeChat)
+                    print '[*] Mobile client touched'
+                    logging.debug('[*] Mobile client touched')
                     r = self.webwxsync()
                 elif selector == '0':
                     time.sleep(1)
@@ -867,20 +858,20 @@ class WebWeixin(object):
                         line = line.replace('\n', '')
                         self._echo('-> ' + name + ': ' + line)
                         if self.webwxsendmsg(line, id):
-                            print ' [成功]'
+                            print ' [Succeeded]'
                         else:
-                            print ' [失败]'
+                            print ' [Failed]'
                         time.sleep(1)
             else:
                 if self.webwxsendmsg(word, id):
-                    print '[*] 消息发送成功'
-                    logging.debug('[*] 消息发送成功')
+                    print '[*] Msg successfully sent'
+                    logging.debug('[*] Msg successfully sent')
                 else:
-                    print '[*] 消息发送失败'
-                    logging.debug('[*] 消息发送失败')
+                    print '[*] Fail: Msg not sent'
+                    logging.debug('[*] Fail: Msg not sent')
         else:
-            print '[*] 此用户不存在'
-            logging.debug('[*] 此用户不存在')
+            print '[*] No such user'
+            logging.debug('[*] No such user')
 
     def sendMsgToAll(self, word):
         for contact in self.ContactList:
@@ -889,26 +880,10 @@ class WebWeixin(object):
             id = contact['UserName']
             self._echo('-> ' + name + ': ' + word)
             if self.webwxsendmsg(word, id):
-                print ' [成功]'
+                print ' [Succeeded]'
             else:
-                print ' [失败]'
+                print ' [Failed]'
             time.sleep(1)
-
-    def sendImg(self, name, file_name):
-        response = self.webwxuploadmedia(file_name)
-        media_id = ""
-        if response is not None:
-            media_id = response['MediaId']
-        user_id = self.getUSerID(name)
-        response = self.webwxsendmsgimg(user_id, media_id)
-
-    def sendEmotion(self, name, file_name):
-        response = self.webwxuploadmedia(file_name)
-        media_id = ""
-        if response is not None:
-            media_id = response['MediaId']
-        user_id = self.getUSerID(name)
-        response = self.webwxsendmsgemotion(user_id, media_id)
 
     @catchKeyboardInterrupt
     def start(self):
@@ -972,19 +947,6 @@ class WebWeixin(object):
             elif text[:3] == 'm->':
                 [name, file] = text[3:].split(':')
                 self.sendMsg(name, file, True)
-            elif text[:3] == 'f->':
-                print '发送文件'
-                logging.debug('发送文件')
-            elif text[:3] == 'i->':
-                print '发送图片'
-                [name, file_name] = text[3:].split(':')
-                self.sendImg(name, file_name)
-                logging.debug('发送图片')
-            elif text[:3] == 'e->':
-                print '发送表情'
-                [name, file_name] = text[3:].split(':')
-                self.sendEmotion(name, file_name)
-                logging.debug('发送表情')
             elif text[:3] == 'g->':
                 [name, word] = text[3:].split(':')
                 id = self.getGroupID(name)
@@ -1081,17 +1043,6 @@ class WebWeixin(object):
             return "Sorry, I can't understand."
         """
         return self.prophet.ask(word)
-
-    def _simsimi(self, word):
-        key = ''
-        url = 'http://sandbox.api.simsimi.com/request.p?key=%s&lc=ch&ft=0.0&text=%s' % (
-            key, word)
-        r = requests.get(url)
-        ans = r.json()
-        if ans['result'] == '100':
-            return ans['response']
-        else:
-            return '你在说什么，风太大听不清列'
 
     def _searchContent(self, key, content, fmat='attr'):
         if fmat == 'attr':
