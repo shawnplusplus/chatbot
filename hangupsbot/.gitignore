@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+MANIFEST
+*.egg-info
+
+hangups
+purplex
+aiohttp
+reparser.py
