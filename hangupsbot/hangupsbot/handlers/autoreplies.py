@@ -22,7 +22,7 @@ def find_keyword(kw, text):
 @handler.register(priority=7, event=hangups.ChatMessageEvent)
 def handle_autoreply(bot, event):
     """Handle autoreplies to keywords in messages"""
-    bot = Cleverbot()
+    cb = Cleverbot()
 
     # Test if message is not empty
     if not event.text:
@@ -32,9 +32,8 @@ def handle_autoreply(bot, event):
     if not bot.get_config_suboption(event.conv_id, 'autoreplies_enabled'):
         return
 
-    reply = bot.ask(event.text)
-    print('CB reply:', reply, type(reply))
-    event.conv.send_message(text_to_segments(reply))
+    reply = cb.ask(event.text)
+    yield from event.conv.send_message(text_to_segments(reply))
 
     """
     # Test if there are actually any autoreplies
