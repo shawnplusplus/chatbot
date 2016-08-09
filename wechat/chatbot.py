@@ -120,7 +120,6 @@ class WebWeixin(object):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie))
         opener.addheaders = [('User-agent', self.user_agent)]
         urllib2.install_opener(opener)
-        self.prophet = Cleverbot()
 
     def loadConfig(self, config):
         if config['DEBUG']:
@@ -1054,7 +1053,8 @@ class WebWeixin(object):
         except:
             return "Sorry, I can't understand."
         """
-        return self.prophet.ask(word)
+        prophet = Cleverbot()
+        return prophet.ask(word)
 
     def _searchContent(self, key, content, fmat='attr'):
         if fmat == 'attr':
